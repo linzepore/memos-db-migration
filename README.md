@@ -14,7 +14,7 @@ Database migration for memos
 
 ## 前置条件
 1. 保证新数据库是空的
-2. 内存最好在2G及以上
+2. 内存最好在2G及以上。否则很大概率会出现`Lost connection to MysoL server during query`（看数据库容器日志）
 3. 当前版本是`0.22.0`（如果有变化建议先将sqlite数据库看看表是否有变化）
 
 ## 使用方式
@@ -23,6 +23,7 @@ Database migration for memos
    - MEMOS_DRIVER=mysql
    - MEMOS_DSN=memos:password@tcp(localhost)/memos
    ```
-2. 准备好sqlite数据库文件、数据库连接参数（可以是同一网络下MySQL的内网地址，docker容器也一样）
-3. 填入`.py`文件中关键参数，执行命令
-4. （可选）如果资源异常，确保环境参数下数据库已换成mysql驱动之后重建容器
+2. 启动memo，初始化数据库的表，然后清空表数据（推荐用navicat来做）
+3. 准备好sqlite数据库文件、数据库连接参数（可以是同一网络下MySQL的内网地址，docker容器也一样）
+4. 填入`.py`文件中关键参数，其中`tables`参数要换成实际的表名，执行脚本
+5. （可选）如果资源异常，确保环境参数下数据库已换成mysql驱动之后重建容器
