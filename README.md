@@ -18,9 +18,11 @@ Database migration for memos
 3. 当前版本是`0.22.0`（如果有变化建议先将sqlite数据库看看表是否有变化）
 
 ## 使用方式
-1. 添加镜像环境参数：
+1. docker容器添加镜像环境参数：
    ```
    - MEMOS_DRIVER=mysql
    - MEMOS_DSN=memos:password@tcp(localhost)/memos
    ```
-2. 
+2. 准备好sqlite数据库文件、数据库连接参数（可以是同一网络下MySQL的内网地址，docker容器也一样）
+3. 填入`.py`文件中关键参数，执行命令
+4. （可选）如果资源异常，确保环境参数下数据库已换成mysql驱动之后重建容器
