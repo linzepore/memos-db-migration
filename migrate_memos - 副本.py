@@ -4,15 +4,17 @@ import mysql.connector
 import datetime  # 导入 datetime 模块
 
 # SQLite 数据库文件
-sqlite_db_file = 'path\\memos_prod.db'
+sqlite_db_file = 'memos_prod.db'
 
 # MySQL 数据库连接参数
 mysql_config = {
-    'user': '',
-    'password': '',
-    'host': '',  # 不需要加端口号
-    'database': '',
+    'user': 'root',
+    'password': 'a1123',
+    'host': '192.168.50.139',  # 不需要加端口号
+    'database': 'memos',
     'raise_on_warnings': True,
+    'use_unicode': False,  # <--- 关键修复
+    'charset': 'binary',   # <--- 辅助修复
 }
 
 def migrate_data():
@@ -27,10 +29,16 @@ def migrate_data():
 
     try:
         # 依次处理每张表的数据迁移
+        # tables = [
+        #     "migration_history", "system_setting", "user", "user_setting",
+        #     "memo", "memo_organizer", "memo_relation", "resource",
+        #      "activity", "reaction", "idp", "inbox", "webhook"
+        # ]
+        # 0.26
         tables = [
-            "migration_history", "system_setting", "user", "user_setting",
-            "memo", "memo_organizer", "memo_relation", "resource",
-             "activity", "reaction", "idp", "inbox", "webhook"
+             "system_setting", "user", "user_setting",
+            "memo", "memo_relation", "attachment",
+             "activity", "reaction", "idp", "inbox"
         ]
 
         for table in tables:
@@ -84,7 +92,36 @@ def migrate_data():
                         continue
 
                 # 执行插入操作
-                values = tuple(row[col] for col in columns)
+                #values = tuple(row[col] for col in columns)
+                # 需要对blob类型单独进行处理，确保正确插入到MySQL中
+                processed_values = []
+                for col in columns:
+                    val = row[col]
+    
+                    # 针对 attachment 表的特定列进行强制处理
+                    # 假设 attachment 表中存二进制数据的列名为 'content' 或 'blob' 
+                    # 你需要根据实际表结构修改这里的列名判断
+                    if table == 'attachment' and col in ['content', 'blob', 'data', 'internal_path']: # 请替换为实际列名
+                        if isinstance(val, str):
+                            # 情况 A: 如果是字符串，尝试还原为 bytes (如果之前被错误 decode)
+                            # 注意：如果原始数据已经损坏（变成了 '?'), 则无法还原，需重新导入源文件
+                            try:
+                                # 尝试用 latin-1 还原，因为它是一对一映射字节
+                                val = val.encode('latin-1') 
+                                print(f"Warning: Converted string to bytes for column {col} using latin-1")
+                            except:
+                                pass
+                        elif val is None:
+                            pass
+                        # 确保最终是 bytes
+                        print(f"Type: {type(val)}")  # 输出当前类型以供调试
+                        if not isinstance(val, (bytes, bytearray)) and val is not None:
+                            # 如果还不是 bytes，可能是其他奇怪类型，视情况处理
+                            pass
+                            
+                    processed_values.append(val)
+
+                values = tuple(processed_values)
                 mysql_cursor.execute(insert_query, values)
 
             # 提交MySQL事务
